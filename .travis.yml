@@ -11,6 +11,7 @@ before_deploy:
 deploy:
   provider: pages
   skip-cleanup: true
+  github-token: "${GH_TOKEN}"
   target-branch: "gh-pages"
   keep-history: true
   on:
