@@ -1,3 +1,6 @@
+
+[![Build Status](https://travis-ci.org/qding-bot/cybrtc.svg?branch=master)](https://travis-ci.org/qding-bot/cybrtc.svg?branch=master)
+
 # cybrtc
 
 ## Project setup
