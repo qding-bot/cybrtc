@@ -1,0 +1,17 @@
+language: node_js
+node_js:
+  '8.0'
+
+before_deploy:
+  npm run build
+
+deploy:
+  provider: pages
+  skip-cleanup: true
+  github-token: "${GH_TOKEN}"
+  target-branch: "gh-pages"
+  keep-history: true
+  on:
+    branch: master
+  local-dir: dist
+  repo: "qding-bot/cybrtc"
