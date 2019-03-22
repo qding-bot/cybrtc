@@ -211,13 +211,24 @@
             handleRemoteHangup () {
                 console.log('Session terminated.');
                 this.stop();
-                this.isInitiator = false;
+                // this.isInitiator = false;
             },
 
             stop () {
                 this.isStarted = false;
                 this.pc.close();
                 this.pc = null;
+            },
+
+            init() {
+                navigator.mediaDevices.getUserMedia({
+                        audio: true,
+                        video: true
+                    })
+                    .then(this.gotStream)
+                    .catch(function (e) {
+                        alert('getUserMedia() error: ' + e.name);
+                    });
             }
         },
         created () {
@@ -232,14 +243,15 @@
             this.$options.sockets.onmessage = this.onMessage;
             this.$options.sockets.onerror = this.onError;
 
-            navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: true
-                })
-                .then(this.gotStream)
-                .catch(function (e) {
-                    alert('getUserMedia() error: ' + e.name);
-                });
+            this.init();
+            // navigator.mediaDevices.getUserMedia({
+            //         audio: true,
+            //         video: true
+            //     })
+            //     .then(this.gotStream)
+            //     .catch(function (e) {
+            //         alert('getUserMedia() error: ' + e.name);
+            //     });
         }
     }
 </script>
