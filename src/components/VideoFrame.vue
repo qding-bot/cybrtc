@@ -46,6 +46,8 @@
                     if (this.isInitiator) {
                         this.doCall();
                     }
+                } else {
+                    console.log('not start')
                 }
             },
 
@@ -249,6 +251,11 @@
                 console.log('ERROR', evt.data);
             }
 
+        },
+        created () {
+            window.addEventListener('beforeunload', () => {
+                this.sendMessage('bye');
+            })
         },
         mounted () {
             this.room = prompt('Enter room name:');
