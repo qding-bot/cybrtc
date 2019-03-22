@@ -131,6 +131,7 @@
                         this.doCall();
                     }
                 } else {
+                    console.log(`Started: ${this.isStarted} channelReady: ${this.isChannelReady} localStream: ${this.localStream}`);
                     console.log('not start')
                 }
             },
