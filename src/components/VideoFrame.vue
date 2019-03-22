@@ -13,7 +13,7 @@
         },
         data: function () {
             return {
-                room: prompt('Enter room name:'),
+                room: undefined,
                 isStarted: false,
                 isInitiator: false,
                 isChannelReady: false,
@@ -76,6 +76,12 @@
                 }
             },
 
+            setLocalAndSendMessage (sessionDescription) {
+                this.pc.setLocalDescription(sessionDescription);
+                console.log('setLocalAndSendMessage sending message', sessionDescription);
+                this.sendMessage(sessionDescription);
+            },
+
             handleCreateOfferError (event) {
                 console.log('createOffer() error: ', event);
             },
@@ -83,12 +89,6 @@
             doCall () {
                 console.log('Sending offer to peer');
                 this.pc.createOffer(this.setLocalAndSendMessage, this.handleCreateOfferError);
-            },
-
-            setLocalAndSendMessage (sessionDescription) {
-                this.pc.setLocalDescription(sessionDescription);
-                console.log('setLocalAndSendMessage sending message', sessionDescription);
-                this.sendMessage(sessionDescription);
             },
 
             onCreateSessionDescriptionError (error) {
@@ -251,6 +251,7 @@
 
         },
         mounted () {
+            this.room = prompt('Enter room name:');
             this.$options.sockets.onopen = this.onOpen;
             this.$options.sockets.onclose = this.onClose;
             this.$options.sockets.onmessage = this.onMessage;
