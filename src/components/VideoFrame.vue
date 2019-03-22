@@ -231,11 +231,11 @@
                     });
             }
         },
-        created () {
-            window.addEventListener('beforeunload', () => {
-                this.sendMessage('bye');
-            })
-        },
+        // created () {
+        //     window.addEventListener('beforeunload', () => {
+        //         this.sendMessage('bye');
+        //     })
+        // },
         mounted () {
             this.room = prompt('Enter room name:');
             this.$options.sockets.onopen = this.onOpen;
