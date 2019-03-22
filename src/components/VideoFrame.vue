@@ -18,7 +18,7 @@
                 pc: undefined,
                 pcConfig: {
                     iceServers: [{
-                        'urls': 'stun:stun.l.google.com:19302'
+                        'urls': 'stun:global.stun.twilio.com:3478?transport=udp'
                     }]
                 },
                 localStream: undefined,
@@ -39,7 +39,6 @@
                     }
                 }
                 if (!turnExists) {
-                    console.log('Getting TURN server from ', turnURL);
                     // No TURN server. Get one from computeengineondemand.appspot.com:
                     let xhr = new XMLHttpRequest();
                     xhr.onreadystatechange = () => {
@@ -49,10 +48,14 @@
                             for (let server of turnServers.iceServers) {
                                 if (server.url.startsWith('turn:')) {
                                     console.log('Got TURN server: ', server.url);
-                                    this.pcConfig.iceServers.push(server);
+                                    this.pcConfig.iceServers.push({
+                                        'urls': 'turn:' + server.username + '@' + server.url,
+                                        'credential': server.credential
+                                    });
                                 }
                             }
                             this.turnReady = true;
+                            console.log('Getting TURN server from ', JSON.stringify(this.pcConfig.iceServers));
                         }
                     };
                     xhr.open('GET', turnURL, true);
@@ -265,7 +268,7 @@
             }
         },
         mounted () {
-            this.requestServers('https://3hs3ekzhqa.execute-api.us-east-1.amazonaws.com/prod/nat?a=b');
+            this.requestServers('https://3hs3ekzhqa.execute-api.us-east-1.amazonaws.com/prod/nat?sig=true');
 
             this.room = prompt('Enter room name:');
             this.$options.sockets.onopen = this.onOpen;
