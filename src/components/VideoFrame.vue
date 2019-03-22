@@ -8,9 +8,6 @@
 <script>
     export default {
         name: 'VideoFrame',
-        props: {
-            msg: String,
-        },
         data: function () {
             return {
                 room: undefined,
@@ -34,138 +31,6 @@
                 console.log('Client sending message: ', message);
                 this.$socket.send(JSON.stringify({action: 'message', message: message, 'room': this.room}));
             },
-
-            maybeStart () {
-                console.log('>>>>>>> maybeStart() ', this.isStarted, this.localStream, this.isChannelReady);
-                if (!this.isStarted && typeof this.localStream !== 'undefined' && this.isChannelReady) {
-                    console.log('>>>>>> creating peer connection');
-                    this.createPeerConnection();
-                    this.pc.addStream(this.localStream);
-                    this.isStarted = true;
-                    console.log('isInitiator', this.isInitiator);
-                    if (this.isInitiator) {
-                        this.doCall();
-                    }
-                } else {
-                    console.log('not start')
-                }
-            },
-
-            createPeerConnection () {
-                try {
-                    this.pc = new RTCPeerConnection(null);
-                    this.pc.onicecandidate = this.handleIceCandidate;
-                    this.pc.onaddstream = this.handleRemoteStreamAdded;
-                    this.pc.onremovestream = this.handleRemoteStreamRemoved;
-                    console.log('Created RTCPeerConnnection');
-                } catch (e) {
-                    console.log('Failed to create PeerConnection, exception: ' + e.message);
-                    alert('Cannot create RTCPeerConnection object.');
-                }
-            },
-
-            handleIceCandidate (event) {
-                console.log('icecandidate event: ', event);
-                if (event.candidate) {
-                    this.sendMessage({
-                        type: 'candidate',
-                        label: event.candidate.sdpMLineIndex,
-                        id: event.candidate.sdpMid,
-                        candidate: event.candidate.candidate
-                    });
-                } else {
-                    console.log('End of candidates.');
-                }
-            },
-
-            setLocalAndSendMessage (sessionDescription) {
-                this.pc.setLocalDescription(sessionDescription);
-                console.log('setLocalAndSendMessage sending message', sessionDescription);
-                this.sendMessage(sessionDescription);
-            },
-
-            handleCreateOfferError (event) {
-                console.log('createOffer() error: ', event);
-            },
-
-            doCall () {
-                console.log('Sending offer to peer');
-                this.pc.createOffer(this.setLocalAndSendMessage, this.handleCreateOfferError);
-            },
-
-            onCreateSessionDescriptionError (error) {
-                console.trace('Failed to create session description: ' + error.toString());
-            },
-
-            requestTurn (turnURL) {
-                let turnExists = false;
-                for (let i in this.pcConfig.iceServers) {
-                    if (this.pcConfig.iceServers[i].urls.substr(0, 5) === 'turn:') {
-                        turnExists = true;
-                        this.turnReady = true;
-                        break;
-                    }
-                }
-                if (!turnExists) {
-                    console.log('Getting TURN server from ', turnURL);
-                    // No TURN server. Get one from computeengineondemand.appspot.com:
-                    let xhr = new XMLHttpRequest();
-                    xhr.onreadystatechange = function () {
-                        if (xhr.readyState === 4 && xhr.status === 200) {
-                            let turnServer = JSON.parse(xhr.responseText);
-                            console.log('Got TURN server: ', turnServer);
-                            this.pcConfig.iceServers.push({
-                                'urls': 'turn:' + turnServer.username + '@' + turnServer.turn,
-                                'credential': turnServer.password
-                            });
-                            this.turnReady = true;
-                        }
-                    };
-                    xhr.open('GET', turnURL, true);
-                    xhr.send();
-                }
-            },
-
-            handleRemoteStreamAdded (event) {
-                console.log('Remote stream added.');
-                this.remoteStream = event.stream;
-                // remoteVideo.srcObject = remoteStream;
-            },
-
-            handleRemoteStreamRemoved (event) {
-                console.log('Remote stream removed. Event: ', event);
-            },
-
-            handleRemoteHangup () {
-                console.log('Session terminated.');
-                stop();
-                this.isInitiator = false;
-            },
-
-            stop () {
-                this.isStarted = false;
-                this.pc.close();
-                this.pc = null;
-            },
-
-            doAnswer () {
-                console.log('Sending answer to peer.');
-                this.pc.createAnswer().then(
-                    this.setLocalAndSendMessage,
-                    this.onCreateSessionDescriptionError
-                );
-            },
-
-            gotStream (stream) {
-                console.log('Adding local stream.');
-                this.localStream = stream;
-                // this.localVideo.srcObject = stream;
-                this.sendMessage('got user media');
-                if (this.isInitiator) {
-                    this.maybeStart();
-                }
-            },
-
             onOpen () {
                 console.log('CONNECTED');
                 if (this.room !== '') {
@@ -173,11 +38,9 @@
                     console.log('Attempted to create or join room', this.room);
                 }
             },
-
             onClose () {
                 console.log('CLOSED');
             },
-
             onMessage (event) {
                 let data = JSON.parse(event.data);
 
@@ -188,13 +51,11 @@
                         this.isInitiator = true;
                         break;
                     }
-
                     case 'full': {
                         let room = data.room;
                         alert('Room ' + room + ' is full');
                         break;
                     }
-
                     case 'join': {
                         let room = data.room;
                         console.log('Another peer made a request to join room ' + room);
@@ -202,18 +63,15 @@
                         this.isChannelReady = true;
                         break;
                     }
-
                     case 'joined': {
                         let room = data.room;
                         console.log('joined: ' + room);
                         this.isChannelReady = true;
                         break;
                     }
-
                     case 'message': {
                         let message = data.message;
                         console.log('Client received message:', message);
-
                         if (message === 'got user media') {
                             this.maybeStart();
                         } else if (message === 'bye' && this.isStarted) {
@@ -249,8 +107,117 @@
             },
             onError (evt) {
                 console.log('ERROR', evt.data);
-            }
+            },
 
+            gotStream (stream) {
+                console.log('Adding local stream.');
+                this.localStream = stream;
+                // this.localVideo.srcObject = stream;
+                this.sendMessage('got user media');
+                if (this.isInitiator) {
+                    this.maybeStart();
+                }
+            },
+
+            maybeStart () {
+                console.log('>>>>>>> maybeStart() ', this.isStarted, this.localStream, this.isChannelReady);
+                if (!this.isStarted && this.localStream !== undefined && this.isChannelReady) {
+                    console.log('>>>>>> creating peer connection');
+                    this.createPeerConnection();
+                    this.pc.addStream(this.localStream);
+                    this.isStarted = true;
+                    console.log('isInitiator', this.isInitiator);
+                    if (this.isInitiator) {
+                        this.doCall();
+                    }
+                } else {
+                    console.log('not start')
+                }
+            },
+
+            createPeerConnection () {
+                try {
+                    this.pc = new RTCPeerConnection(null);
+                    this.pc.onicecandidate = this.handleIceCandidate;
+                    this.pc.onaddstream = this.handleRemoteStreamAdded;
+                    this.pc.onremovestream = this.handleRemoteStreamRemoved;
+                    console.log('Created RTCPeerConnnection');
+                } catch (e) {
+                    console.log('Failed to create PeerConnection, exception: ' + e.message);
+                    alert('Cannot create RTCPeerConnection object.');
+                }
+            },
+
+            doCall () {
+                // While creating offer, WebRTC will ask for SELF's candidate info and trigger pc.onicecandidate
+                // Then "handleIceCandidate" will broadcast SELF's candidate info to room
+                // When received OTHER's "candidate" info in "onMessage", will set their info locally by pc.addCandidate()
+                console.log('Sending offer to peer');
+                this.pc.createOffer(this.setLocalAndSendMessage, this.handleCreateOfferError);
+            },
+
+            doAnswer () {
+                // While creating answer, WebRTC will ask for SELF's candidate info and trigger pc.onicecandidate
+                // Then "handleIceCandidate" will broadcast SELF's candidate info to room
+                // When received OTHER's "candidate" info in "onMessage", will set their info locally by pc.addCandidate()
+                console.log('Sending answer to peer.');
+                this.pc.createAnswer(
+                    this.setLocalAndSendMessage,
+                    this.onCreateSessionDescriptionError
+                );
+            },
+
+            handleIceCandidate (event) {
+                // Triggered by creating offer or answer
+                console.log('icecandidate event: ', event);
+                if (event.candidate) {
+                    this.sendMessage({
+                        type: 'candidate',
+                        label: event.candidate.sdpMLineIndex,
+                        id: event.candidate.sdpMid,
+                        candidate: event.candidate.candidate
+                    });
+                } else {
+                    console.log('End of candidates.');
+                }
+            },
+
+            handleRemoteStreamAdded (event) {
+                // After SDP exchange and candidate exchange, WebRTC will automatically send streams to each peers
+                console.log('Remote stream added.');
+                this.remoteStream = event.stream;
+                // remoteVideo.srcObject = remoteStream;
+            },
+
+            handleRemoteStreamRemoved (event) {
+                console.log('Remote stream removed. Event: ', event);
+            },
+
+            setLocalAndSendMessage (sessionDescription) {
+                this.pc.setLocalDescription(sessionDescription);
+                console.log('setLocalAndSendMessage sending message', sessionDescription);
+                this.sendMessage(sessionDescription);
+            },
+
+            handleCreateOfferError (event) {
+                console.log('createOffer() error: ', event);
+            },
+
+            onCreateSessionDescriptionError (error) {
+                console.trace('Failed to create session description: ' + error.toString());
+            },
+
+            handleRemoteHangup () {
+                console.log('Session terminated.');
+                this.stop();
+                this.isInitiator = false;
+            },
+
+            stop () {
+                this.isStarted = false;
+                this.pc.close();
+                this.pc = null;
+            }
         },
         created () {
             window.addEventListener('beforeunload', () => {
@@ -265,7 +232,7 @@
             this.$options.sockets.onerror = this.onError;
 
             navigator.mediaDevices.getUserMedia({
-                    audio: false,
+                    audio: true,
                     video: true
                 })
                 .then(this.gotStream)
