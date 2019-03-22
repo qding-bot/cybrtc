@@ -55,7 +55,7 @@
                                 }
                             }
                             this.turnReady = true;
-                            console.log('Getting TURN server from ', JSON.stringify(this.pcConfig.iceServers));
+                            // console.log('Getting TURN server from ', JSON.stringify(this.pcConfig.iceServers));
                         }
                     };
                     xhr.open('GET', turnURL, true);
