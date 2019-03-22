@@ -17,7 +17,7 @@
                 turnReady: false,
                 pc: undefined,
                 pcConfig: {
-                    'iceServers': [{
+                    iceServers: [{
                         'urls': 'stun:stun.l.google.com:19302'
                     }]
                 },
@@ -27,6 +27,39 @@
             }
         },
         methods: {
+            requestServers (turnURL) {
+                // console.log('PC Config: ' + JSON.stringify(this.pcConfig));
+
+                let turnExists = false;
+                for (let iceServer of this.pcConfig.iceServers) {
+                    if (iceServer.urls.startsWith('turn:')) {
+                        turnExists = true;
+                        this.turnReady = true;
+                        break;
+                    }
+                }
+                if (!turnExists) {
+                    console.log('Getting TURN server from ', turnURL);
+                    // No TURN server. Get one from computeengineondemand.appspot.com:
+                    let xhr = new XMLHttpRequest();
+                    xhr.onreadystatechange = () => {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            let turnServers = JSON.parse(xhr.responseText);
+
+                            for (let server of turnServers.iceServers) {
+                                if (server.url.startsWith('turn:')) {
+                                    console.log('Got TURN server: ', server.url);
+                                    this.pcConfig.iceServers.push(server);
+                                }
+                            }
+                            this.turnReady = true;
+                        }
+                    };
+                    xhr.open('GET', turnURL, true);
+                    xhr.send();
+                }
+            },
+
             sendMessage (message) {
                 console.log('Client sending message: ', message);
                 this.$socket.send(JSON.stringify({action: 'message', message: message, 'room': this.room}));
@@ -220,7 +253,7 @@
                 this.pc = null;
             },
 
-            init() {
+            init () {
                 navigator.mediaDevices.getUserMedia({
                         audio: true,
                         video: true
@@ -231,12 +264,9 @@
                     });
             }
         },
-        // created () {
-        //     window.addEventListener('beforeunload', () => {
-        //         this.sendMessage('bye');
-        //     })
-        // },
         mounted () {
+            this.requestServers('https://3hs3ekzhqa.execute-api.us-east-1.amazonaws.com/prod/nat?a=b');
+
             this.room = prompt('Enter room name:');
             this.$options.sockets.onopen = this.onOpen;
             this.$options.sockets.onclose = this.onClose;
