@@ -5,7 +5,7 @@ import VueNativeSock from 'vue-native-websocket'
 Vue.config.productionTip = false;
 
 
-Vue.use(VueNativeSock, 'ws://localhost:8081', {
+Vue.use(VueNativeSock, 'wss://gbgeujsgda.execute-api.us-east-1.amazonaws.com/test', {
     reconnection: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 3000
