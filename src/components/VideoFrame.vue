@@ -85,7 +85,6 @@
                         let room = data.room;
                         console.log('Created room ' + room);
                         this.isInitiator = true;
-                        this.init();
                         break;
                     }
                     case 'full': {
@@ -104,7 +103,6 @@
                         let room = data.room;
                         console.log('joined: ' + room);
                         this.isChannelReady = true;
-                        this.init();
                         break;
                     }
                     case 'message': {
@@ -272,8 +270,8 @@
                     });
             }
         },
-        mounted () {
-            this.requestServers('https://3hs3ekzhqa.execute-api.us-east-1.amazonaws.com/prod/nat?sig=true');
+        async mounted () {
+            await this.init();
 
             this.room = prompt('Enter room name:');
             this.$options.sockets.onopen = this.onOpen;
@@ -281,7 +279,9 @@
             this.$options.sockets.onmessage = this.onMessage;
             this.$options.sockets.onerror = this.onError;
 
-            // this.init();
+            await this.requestServers('https://3hs3ekzhqa.execute-api.us-east-1.amazonaws.com/prod/nat?sig=true');
+
+
             // navigator.mediaDevices.getUserMedia({
             //         audio: true,
             //         video: true
