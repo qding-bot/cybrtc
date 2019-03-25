@@ -190,7 +190,10 @@
                 // Then "handleIceCandidate" will broadcast SELF's candidate info to room
                 // When received OTHER's "candidate" info in "onMessage", will set their info locally by pc.addCandidate()
                 console.log('Sending offer to peer');
-                this.pc.createOffer(this.setLocalAndSendMessage, this.handleCreateOfferError);
+                // this.pc.createOffer(this.setLocalAndSendMessage, this.handleCreateOfferError);
+                this.pc.createOffer().then(
+                    this.setLocalAndSendMessage,
+                    this.handleCreateOfferError);
             },
 
             doAnswer () {
@@ -198,7 +201,7 @@
                 // Then "handleIceCandidate" will broadcast SELF's candidate info to room
                 // When received OTHER's "candidate" info in "onMessage", will set their info locally by pc.addCandidate()
                 console.log('Sending answer to peer.');
-                this.pc.createAnswer(
+                this.pc.createAnswer().then(
                     this.setLocalAndSendMessage,
                     this.onCreateSessionDescriptionError
                 );
