@@ -103,6 +103,7 @@
                         let room = data.room;
                         console.log('joined: ' + room);
                         this.isChannelReady = true;
+                        this.maybeStart();
                         break;
                     }
                     case 'message': {
