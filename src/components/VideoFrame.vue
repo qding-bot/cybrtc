@@ -85,6 +85,7 @@
                         let room = data.room;
                         console.log('Created room ' + room);
                         this.isInitiator = true;
+                        this.init();
                         break;
                     }
                     case 'full': {
@@ -103,6 +104,7 @@
                         let room = data.room;
                         console.log('joined: ' + room);
                         this.isChannelReady = true;
+                        this.init();
                         break;
                     }
                     case 'message': {
@@ -279,7 +281,7 @@
             this.$options.sockets.onmessage = this.onMessage;
             this.$options.sockets.onerror = this.onError;
 
-            this.init();
+            // this.init();
             // navigator.mediaDevices.getUserMedia({
             //         audio: true,
             //         video: true
