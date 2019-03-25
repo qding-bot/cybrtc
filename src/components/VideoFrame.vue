@@ -120,8 +120,8 @@
                                     if (!this.isInitiator && !this.isStarted) {
                                         this.maybeStart();
                                     }
-                                    this.pc.setRemoteDescription(new RTCSessionDescription(message));
-                                    this.doAnswer();
+                                    this.pc.setRemoteDescription(new RTCSessionDescription(message)).then(this.doAnswer);
+                                    // this.doAnswer();
                                     break;
                                 case 'answer':
                                     if (this.isStarted) {
@@ -134,7 +134,7 @@
                                             sdpMLineIndex: message.label,
                                             candidate: message.candidate
                                         });
-                                        this.pc.addIceCandidate(candidate);
+                                        this.pc.addIceCandidate(candidate).then(e=> {console.log('adding ice candidate success')}).catch(e=> console.error(e.message));
                                     }
                                     break;
                             }
