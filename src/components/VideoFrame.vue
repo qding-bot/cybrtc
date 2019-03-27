@@ -281,7 +281,9 @@
             handleRemoteHangup () {
                 console.log('Session terminated.');
                 this.stop();
-                // this.isInitiator = false;
+                // Promote the current one as initiator
+                console.log('Now I am initiator of this room');
+                this.isInitiator = true;
             },
 
             stop () {
