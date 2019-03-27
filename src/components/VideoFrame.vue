@@ -168,10 +168,10 @@
                 console.log('Attaching local stream.');
                 this.localStream = stream;
                 // this.localVideo.srcObject = stream;
-                console.log('Start signaling');
                 if (this.isInitiator) {
                     await this.maybeStart();
                 }
+                console.log('Start signaling');
                 this.sendMessage('got user media');
             },
 
