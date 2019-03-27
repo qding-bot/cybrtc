@@ -29,6 +29,7 @@
         methods: {
             async requestServers (turnURL) {
                 // console.log('PC Config: ' + JSON.stringify(this.pcConfig));
+                console.log('Retrieved ICE server information.');
                 return new Promise(function (resolve, reject) {
                     let turnExists = false;
                     for (let iceServer of this.pcConfig.iceServers) {
@@ -47,9 +48,10 @@
 
                                 for (let server of turnServers.iceServers) {
                                     if (server.url.startsWith('turn:')) {
-                                        console.log('Got TURN server: ', server.url);
+                                        // console.log('Got TURN server: ', server.url);
                                         this.pcConfig.iceServers.push({
-                                            'urls': 'turn:' + server.username + '@' + server.url,
+                                            'urls': server.url,
+                                            'username': server.username,
                                             'credential': server.credential
                                         });
                                     }
@@ -72,17 +74,18 @@
             },
 
             sendMessage (message) {
-                console.log('Client sending message: ', message);
+                console.log('C->WSS: ', message);
                 this.$socket.send(JSON.stringify({action: 'message', message: message, 'room': this.room}));
             },
             async onOpen () {
-                console.log('CONNECTED');
+                console.log('Signaling channel opened.');
                 if (this.room !== '') {
                     this.$socket.send(JSON.stringify({action: 'create or join', room: this.room}));
-                    console.log('Attempted to create or join room', this.room);
                 }
-                await this.requestServers('https://3hs3ekzhqa.execute-api.us-east-1.amazonaws.com/prod/nat?sig=true');
-                await this.init();
+                await Promise.all([
+                    this.requestServers('https://3hs3ekzhqa.execute-api.us-east-1.amazonaws.com/prod/nat?sig=true'),
+                    this.init()
+                ]);
             },
             onClose () {
                 console.log('CLOSED');
@@ -93,7 +96,7 @@
                 switch (data.action) {
                     case 'created': {
                         let room = data.room;
-                        console.log('Created room ' + room);
+                        console.log('Created the room ' + room);
                         this.isInitiator = true;
                         break;
                     }
@@ -159,20 +162,22 @@
             },
 
             gotStream (stream) {
-                console.log('Adding local stream.');
+                console.log('Got access to local media');
+                console.log('Attaching local stream.');
                 this.localStream = stream;
                 // this.localVideo.srcObject = stream;
+                console.log('Start signaling');
                 this.sendMessage('got user media');
                 if (this.isInitiator) {
                     this.maybeStart();
                 }
             },
 
-            maybeStart () {
+            async maybeStart () {
                 console.log('>>>>>>> maybeStart() ', this.isStarted, this.localStream, this.isChannelReady);
                 if (!this.isStarted && this.localStream !== undefined && this.isChannelReady) {
                     console.log('>>>>>> creating peer connection');
-                    this.createPeerConnection();
+                    await this.createPeerConnection();
                     this.pc.addStream(this.localStream);
                     this.isStarted = true;
                     console.log('isInitiator', this.isInitiator);
@@ -185,9 +190,16 @@
                 }
             },
 
-            createPeerConnection () {
+            async createPeerConnection () {
                 try {
-                    this.pc = new RTCPeerConnection(null);
+                    let certParams = {name: 'ECDSA', namedCurve: 'P-256'};
+                    let certs = await RTCPeerConnection.generateCertificate(certParams);
+                    console.log('ECDSA certificate generated successfully.');
+
+                    this.pcConfig.certificates = [certs];
+                    console.log(this.pcConfig);
+                    this.pc = new RTCPeerConnection(this.pcConfig);
+
                     this.pc.onicecandidate = this.handleIceCandidate;
                     this.pc.onaddstream = this.handleRemoteStreamAdded;
                     this.pc.onremovestream = this.handleRemoteStreamRemoved;
@@ -278,7 +290,6 @@
                         audio: true,
                         video: true
                     });
-                    console.log(stream);
                     this.gotStream(stream);
                 } catch (e) {
                     alert('getUserMedia() error: ' + e.name);
@@ -287,6 +298,7 @@
         },
         async mounted () {
             this.room = prompt('Enter room name:');
+            console.log('Opening signaling channel.');
             this.$options.sockets.onopen = this.onOpen;
             this.$options.sockets.onclose = this.onClose;
             this.$options.sockets.onmessage = this.onMessage;
