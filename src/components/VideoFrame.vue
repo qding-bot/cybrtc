@@ -28,7 +28,6 @@
         },
         methods: {
             async requestServers (turnURL) {
-                // console.log('PC Config: ' + JSON.stringify(this.pcConfig));
                 console.log('Retrieved ICE server information.');
                 return new Promise(function (resolve, reject) {
                     let turnExists = false;
@@ -74,23 +73,24 @@
             },
 
             sendMessage (message) {
-                console.log('C->WSS: ', message);
-                this.$socket.send(JSON.stringify({action: 'message', message: message, 'room': this.room}));
+                let message_string = JSON.stringify({action: 'message', message: message, 'room': this.room});
+                console.log('C->WSS: ', message_string);
+                this.$socket.send(message_string);
             },
+
             async onOpen () {
                 console.log('Signaling channel opened.');
                 if (this.room !== '') {
                     this.$socket.send(JSON.stringify({action: 'create or join', room: this.room}));
                 }
-                await Promise.all([
-                    this.requestServers('https://3hs3ekzhqa.execute-api.us-east-1.amazonaws.com/prod/nat?sig=true'),
-                    this.init()
-                ]);
+                await this.requestServers('https://3hs3ekzhqa.execute-api.us-east-1.amazonaws.com/prod/nat?sig=true')
             },
-            onClose () {
+
+            async onClose () {
                 console.log('CLOSED');
             },
-            onMessage (event) {
+
+            async onMessage (event) {
                 let data = JSON.parse(event.data);
 
                 switch (data.action) {
@@ -98,6 +98,7 @@
                         let room = data.room;
                         console.log('Created the room ' + room);
                         this.isInitiator = true;
+                        await this.init();
                         break;
                     }
                     case 'full': {
@@ -116,21 +117,21 @@
                         let room = data.room;
                         console.log('joined: ' + room);
                         this.isChannelReady = true;
-                        this.maybeStart();
+                        await this.init();
                         break;
                     }
                     case 'message': {
                         let message = data.message;
-                        console.log('Client received message:', message);
+                        console.log('WSS->C: ', JSON.stringify(message));
                         if (message === 'got user media') {
-                            this.maybeStart();
+                            await this.maybeStart();
                         } else if (message === 'bye' && this.isStarted) {
                             this.handleRemoteHangup();
                         } else {
                             switch (message.type) {
                                 case 'offer':
                                     if (!this.isInitiator && !this.isStarted) {
-                                        this.maybeStart();
+                                        await this.maybeStart();
                                     }
                                     this.pc.setRemoteDescription(new RTCSessionDescription(message)).then(this.doAnswer);
                                     // this.doAnswer();
@@ -178,6 +179,7 @@
                 if (!this.isStarted && this.localStream !== undefined && this.isChannelReady) {
                     console.log('>>>>>> creating peer connection');
                     await this.createPeerConnection();
+                    console.log('Adding local stream.');
                     this.pc.addStream(this.localStream);
                     this.isStarted = true;
                     console.log('isInitiator', this.isInitiator);
@@ -192,12 +194,16 @@
 
             async createPeerConnection () {
                 try {
-                    let certParams = {name: 'ECDSA', namedCurve: 'P-256'};
-                    let certs = await RTCPeerConnection.generateCertificate(certParams);
-                    console.log('ECDSA certificate generated successfully.');
+                    try {
+                        let certParams = {name: 'ECDSA', namedCurve: 'P-256'};
+                        let certs = await RTCPeerConnection.generateCertificate(certParams);
+                        console.log('ECDSA certificate generated successfully.');
+                        this.pcConfig.certificates = [certs];
+                    } catch (e) {
+                        console.log('ECDSA certificate generation failed.')
+                    }
 
-                    this.pcConfig.certificates = [certs];
-                    console.log(this.pcConfig);
+                    console.log(`Creating RTCPeerConnnection with: ${this.pcConfig}`);
                     this.pc = new RTCPeerConnection(this.pcConfig);
 
                     this.pc.onicecandidate = this.handleIceCandidate;
