@@ -78,8 +78,9 @@
                 this.$socket.send(message_string);
             },
 
-            async onOpen () {
+            async onOpen (event) {
                 console.log('Signaling channel opened.');
+                this.$socket = event.currentTarget;
                 if (this.room !== '') {
                     this.$socket.send(JSON.stringify({action: 'create or join', room: this.room}));
                 }
@@ -162,16 +163,16 @@
                 console.log('ERROR', evt.data);
             },
 
-            gotStream (stream) {
+            async gotStream (stream) {
                 console.log('Got access to local media');
                 console.log('Attaching local stream.');
                 this.localStream = stream;
                 // this.localVideo.srcObject = stream;
                 console.log('Start signaling');
-                this.sendMessage('got user media');
                 if (this.isInitiator) {
-                    this.maybeStart();
+                    await this.maybeStart();
                 }
+                this.sendMessage('got user media');
             },
 
             async maybeStart () {
