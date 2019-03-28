@@ -22,7 +22,6 @@
                 },
                 localStream: undefined,
                 remoteStream: undefined
-
             }
         },
         methods: {
