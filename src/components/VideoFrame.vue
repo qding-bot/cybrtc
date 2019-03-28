@@ -18,9 +18,7 @@
                 turnReady: false,
                 pc: undefined,
                 pcConfig: {
-                    iceServers: [{
-                        'urls': 'stun:global.stun.twilio.com:3478?transport=udp'
-                    }]
+                    iceServers: []
                 },
                 localStream: undefined,
                 remoteStream: undefined
@@ -49,16 +47,24 @@
                                 for (let server of turnServers.iceServers) {
                                     if (server.url.startsWith('turn:')) {
                                         // console.log('Got TURN server: ', server.url);
-                                        this.pcConfig.iceServers.push({
-                                            'urls': server.url,
-                                            'username': server.username,
-                                            'credential': server.credential
-                                        });
+                                        this.pcConfig.iceServers.push(
+                                            {
+                                                'urls': server.url,
+                                                'username': server.username,
+                                                'credential': server.credential
+                                            }
+                                        );
+                                    } else if (server.url.startsWith('stun:')) {
+                                        this.pcConfig.iceServers.push(
+                                            {
+                                                'urls': server.url
+                                            }
+                                        );
                                     }
                                 }
                                 this.turnReady = true;
                                 resolve();
-                                // console.log('Getting TURN server from ', JSON.stringify(this.pcConfig.iceServers));
+                                console.log('Getting TURN server from ', JSON.stringify(this.pcConfig.iceServers));
                             }
                         };
                         xhr.onerror = () => {
