@@ -84,7 +84,10 @@
                 if (this.room !== '') {
                     this.$socket.send(JSON.stringify({action: 'create or join', room: this.room}));
                 }
-                await this.requestServers('https://3hs3ekzhqa.execute-api.us-east-1.amazonaws.com/prod/nat?sig=true')
+                await Promise.all([
+                    this.init(),
+                    this.requestServers('https://3hs3ekzhqa.execute-api.us-east-1.amazonaws.com/prod/nat?sig=true')
+                ]);
             },
 
             async onClose () {
@@ -99,7 +102,9 @@
                         let room = data.room;
                         console.log('Created the room ' + room);
                         this.isInitiator = true;
-                        await this.init();
+                        if (this.localStream !== undefined) {
+                            this.maybeStart();
+                        }
                         break;
                     }
                     case 'full': {
@@ -111,14 +116,16 @@
                         let room = data.room;
                         console.log('Another peer made a request to join room ' + room);
                         console.log('This peer is the initiator of room ' + room + '!');
-                        this.isChannelReady = true;
+                        // this.isChannelReady = true;
                         break;
                     }
                     case 'joined': {
                         let room = data.room;
                         console.log('joined: ' + room);
                         this.isChannelReady = true;
-                        await this.init();
+                        if (this.localStream !== undefined) {
+                            this.maybeStart();
+                        }
                         break;
                     }
                     case 'message': {
@@ -159,6 +166,7 @@
                     }
                 }
             },
+
             onError (evt) {
                 console.log('ERROR', evt.data);
             },
@@ -172,7 +180,7 @@
                     await this.maybeStart();
                 }
                 console.log('Start signaling');
-                this.sendMessage('got user media');
+
             },
 
             async maybeStart () {
@@ -184,11 +192,12 @@
                     this.pc.addStream(this.localStream);
                     this.isStarted = true;
                     console.log('isInitiator', this.isInitiator);
+                    this.sendMessage('got user media');
                     if (this.isInitiator) {
                         this.doCall();
                     }
                 } else {
-                    console.log(`Started: ${this.isStarted} channelReady: ${this.isChannelReady} localStream: ${this.localStream}`);
+                    console.log(`Started: ${this.isStarted} channelReady: ${this.isChannelReady} localStream: ${this.localStream !== undefined}`);
                     console.log('not start')
                 }
             },
@@ -299,7 +308,7 @@
                         audio: true,
                         video: true
                     });
-                    this.gotStream(stream);
+                    await this.gotStream(stream);
                 } catch (e) {
                     alert('getUserMedia() error: ' + e.name);
                 }
