@@ -11,6 +11,7 @@
         data: function () {
             return {
                 room: undefined,
+                clientId: undefined,
                 isStarted: false,
                 isInitiator: false,
                 isChannelReady: false,
@@ -82,7 +83,10 @@
                 console.log('Signaling channel opened.');
                 this.$socket = event.currentTarget;
                 if (this.room !== '') {
-                    this.$socket.send(JSON.stringify({action: 'create or join', room: this.room}));
+                    this.$socket.send(JSON.stringify({
+                        action: 'create or join',
+                        room: this.room,
+                    }));
                 }
                 await Promise.all([
                     this.init(),
@@ -100,7 +104,10 @@
                 switch (data.action) {
                     case 'created': {
                         let room = data.room;
-                        console.log('Created the room ' + room);
+                        let clientId = data.clientId;
+                        this.clientId = clientId;
+
+                        console.log(`${clientId} Created the room ${room}`);
                         this.isInitiator = true;
                         if (this.localStream !== undefined) {
                             this.maybeStart();
@@ -114,16 +121,22 @@
                     }
                     case 'join': {
                         let room = data.room;
-                        console.log('Another peer made a request to join room ' + room);
-                        console.log('This peer is the initiator of room ' + room + '!');
+                        let clientId = data.clientId;
+                        console.log(`Another peer ${clientId} made a request to join room ${room}`);
+                        console.log(`This peer is the initiator of room ${room}!`);
                         // this.isChannelReady = true;
                         break;
                     }
                     case 'joined': {
                         let room = data.room;
-                        console.log('joined: ' + room);
+                        let clientId = data.clientId;
+                        if (this.clientId === undefined) {
+                            this.clientId = clientId;
+                        }
+
+                        console.log(`Peer ${clientId} joined: ${room}`);
                         this.isChannelReady = true;
-                        if (!this.isInitiator) {
+                        if (clientId === this.clientId) {
                             this.sendMessage('ready');
                         }
                         break;
