@@ -123,15 +123,15 @@
                         let room = data.room;
                         console.log('joined: ' + room);
                         this.isChannelReady = true;
-                        if (this.localStream !== undefined) {
-                            this.maybeStart();
+                        if (!this.isInitiator) {
+                            this.sendMessage('ready');
                         }
                         break;
                     }
                     case 'message': {
                         let message = data.message;
                         console.log('WSS->C: ', JSON.stringify(message));
-                        if (message === 'got user media') {
+                        if (message === 'ready') {
                             await this.maybeStart();
                         } else if (message === 'bye' && this.isStarted) {
                             this.handleRemoteHangup();
@@ -180,7 +180,6 @@
                     await this.maybeStart();
                 }
                 console.log('Start signaling');
-
             },
 
             async maybeStart () {
@@ -192,7 +191,7 @@
                     this.pc.addStream(this.localStream);
                     this.isStarted = true;
                     console.log('isInitiator', this.isInitiator);
-                    this.sendMessage('got user media');
+                    // this.sendMessage('got user media');
                     if (this.isInitiator) {
                         this.doCall();
                     }
